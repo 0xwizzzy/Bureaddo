@@ -592,6 +592,45 @@ export const footerHTML = `
 </footer>
 `
 
+export function rewriteAppLinks(root = document) {
+  const anchors = root.querySelectorAll ? root.querySelectorAll('a[data-link]') : []
+
+  anchors.forEach((a) => {
+    const href = a.getAttribute('href')
+    if (!href) return
+    if (href.startsWith('#')) return
+    if (href.startsWith('mailto:') || href.startsWith('tel:')) return
+    if (href.startsWith('/?page=')) return
+
+    const url = new URL(href, window.location.origin)
+    if (url.origin !== window.location.origin) return
+
+    let nextHref = href
+
+    if (url.pathname === '/' && !url.search) {
+      nextHref = '/'
+    } else if (url.pathname.startsWith('/product/')) {
+      const slug = url.pathname.split('/').filter(Boolean)[1] || ''
+      nextHref = `/?page=product&slug=${encodeURIComponent(slug)}`
+    } else if (url.pathname === '/search') {
+      const params = new URLSearchParams(url.search)
+      const qs = params.toString()
+      nextHref = `/?page=search${qs ? `&${qs}` : ''}`
+    } else if (url.pathname === '/whats-new') {
+      nextHref = '/?page=whats-new'
+    } else if (url.pathname.startsWith('/whats-new/')) {
+      const key = url.pathname.split('/').filter(Boolean)[1] || ''
+      nextHref = `/?page=whats-new&collection=${encodeURIComponent(key)}`
+    } else if (url.pathname.startsWith('/')) {
+      const page = url.pathname.slice(1)
+      const qs = url.search ? url.search.slice(1) : ''
+      nextHref = `/?page=${encodeURIComponent(page)}${qs ? `&${qs}` : ''}`
+    }
+
+    if (nextHref !== href) a.setAttribute('href', nextHref)
+  })
+}
+
 export function setupLayout() {
   const mobileMenuButton = document.getElementById('mobile-menu-button');
   const closeMenuButton = document.getElementById('close-menu-button');
@@ -642,11 +681,12 @@ export function setupLayout() {
     siteSearchForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const q = siteSearchInput ? siteSearchInput.value.trim() : '';
-      const next = q ? `/search?q=${encodeURIComponent(q)}` : '/search';
-      window.history.pushState({}, '', next);
-      window.dispatchEvent(new PopStateEvent('popstate'));
+      const next = q ? `/?page=search&q=${encodeURIComponent(q)}` : '/?page=search';
+      window.location.href = next;
     });
   }
+
+  rewriteAppLinks(document)
 
   if (mobileMenuButton && mobileMenu) {
     mobileMenuButton.addEventListener('click', () => {
@@ -755,4 +795,3 @@ export function setupLayout() {
     );
   }
 }
-

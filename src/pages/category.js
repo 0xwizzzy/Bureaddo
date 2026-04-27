@@ -757,8 +757,7 @@ export function setupPageInteractions(container) {
 
     const fd = new FormData(form)
     const q = String(fd.get('q') || '').trim()
-    const next = q ? `/search?q=${encodeURIComponent(q)}` : '/search'
-    window.history.pushState({}, '', next)
-    container.innerHTML = renderSearchPage({ query: q })
+    const next = q ? `/?page=search&q=${encodeURIComponent(q)}` : '/?page=search'
+    window.location.href = next
   })
 }
